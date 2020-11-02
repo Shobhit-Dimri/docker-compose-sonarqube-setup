@@ -1,0 +1,62 @@
+version: "3"
+
+services:
+  sonarqube:
+    depends_on:
+      - db
+    user: 999:999
+    image: sonarqube:latest
+    container_name: sonarqube
+    ulimits:
+      nproc: 65535
+    networks:
+      - sonarnet
+    restart: unless-stopped
+    environment:
+      - ES_JAVA_OPTIONS=-Xmx1024m -Xms1024m -XX:+HeapDumpOnOutOfMemoryError
+      - -esonar.jdbc.username=sonar
+      - -esonar.jdbc.password=sonar
+      - -esonar.jdbc.url=jdbc:postgresql://db:5432/sonarqube
+    ports:
+      - "9000:9000"
+      - "9092:9092"
+    volumes:
+      - sonarqube_conf:/opt/sonarqube/conf
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    container_name: sonarqube-postgres-database
+    networks:
+      - sonarnet
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonarqube
+    volumes:
+      - sonarqube_db:/var/lib/postgresql
+      - postgresql_data:/var/lib/postgresql/data
+networks:
+  sonarnet:
+volumes:
+  postgresql_data:
+  sonarqube_bundled-plugins:
+  sonarqube_conf:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_db:
+
+
+
+  # docker run -d --name sonarqube -p 9000:9000 -e sonar.jdbc.url=jdbc:postgresql://sonar-postgres:5432/sonar -e sonar.jdbc.username=sonar -e sonar.jdbc.password=sonar -v sonarqube_conf:/opt/sonarqube/conf -v sonarqube_extensions:/opt/sonarqube/extensions -v sonarqube_logs:/opt/sonarqube/logs -v sonarqube_data:/opt/sonarqube/data sonarqube:latest
+
+  # docker network create sonar-network
+  # docker run --name Postgres -e POSTGRES_USER=sonar -e POSTGRES_PASSWORD=sonar POSTGRES_DB=sonarqube -d -p 5432:5432 --net sonar-network postgres
+  # docker run --name SonarQube -p 9000:9000 -e sonar.jdbc.username=sonar -e sonar.jdbc.password=sonar -e sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonarqube -d -v sonarqube_conf:/opt/sonarqube/conf -v sonarqube_extensions:/opt/sonarqube/extensions -v sonarqube_logs:/opt/sonarqube/logs -v sonarqube_data:/opt/sonarqube/data --net sonar-network sonarqube:latest
+  # docker run --name SonarQube -p 9000:9000 -d -v sonarqube_conf:/opt/sonarqube/conf -v sonarqube_extensions:/opt/sonarqube/extensions -v sonarqube_logs:/opt/sonarqube/logs -v sonarqube_data:/opt/sonarqube/data sonarqube:latest
+
+
+  # docker exec -it Postgres psql -U sonar -d sonarqube
